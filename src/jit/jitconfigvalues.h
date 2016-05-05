@@ -145,6 +145,8 @@ CONFIG_STRING(NgenDumpFgDir, W("NgenDumpFgDir")) // Ngen Xml Flowgraph support
 CONFIG_STRING(NgenDumpFgFile, W("NgenDumpFgFile")) // Ngen Xml Flowgraph support
 CONFIG_STRING(NgenDumpIRFormat, W("NgenDumpIRFormat")) // Same as JitDumpIRFormat, but for ngen
 CONFIG_STRING(NgenDumpIRPhase, W("NgenDumpIRPhase")) // Same as JitDumpIRPhase, but for ngen
+CONFIG_METHODSET(JitPrependNops, W("JitPrependNops")) // Emits nop instructions into jitted code
+CONFIG_INTEGER(JitPrependNopsNumber, W("JitPrependNopsNumber"), 0)
 #endif // defined(DEBUG)
 
 // AltJitAssertOnNYI should be 0 on targets where JIT is under developement or bring up stage, so as to facilitate fallback to main JIT on hitting a NYI.

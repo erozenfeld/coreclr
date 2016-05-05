@@ -8523,6 +8523,10 @@ public:
 
     bool      compJitHaltMethod();
 
+    bool      compJitPrependNops();
+
+    int      compJitPrependNopsNumber();
+
 #endif
 
     /*

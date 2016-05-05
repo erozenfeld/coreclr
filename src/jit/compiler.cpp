@@ -2817,6 +2817,21 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 
 #ifdef DEBUG
 
+bool Compiler::compJitPrependNops()
+{
+    if (JitConfig.JitPrependNops().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+int Compiler::compJitPrependNopsNumber()
+{
+    return JitConfig.JitPrependNopsNumber();
+}
+
 void JitDump(const char* pcFormat, ...)
 {
     va_list lst;    

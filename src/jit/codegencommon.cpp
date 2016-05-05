@@ -8502,7 +8502,24 @@ void                CodeGen::genFnProlog()
     }
 #endif
 
+    /*
+    //if (!strcmp(compiler->info.compClassName, "Midori.CompilerPerf.Iniarray") && !strcmp(compiler->info.compMethodName, "Go"))
+    {
+        instGen(INS_nop);
+        instGen(INS_nop);
+        instGen(INS_nop);
+    }
+    */
+
 #ifdef DEBUG
+
+    if (compiler->compJitPrependNops())
+    {
+        for (int i = 0; i < compiler->compJitPrependNopsNumber(); ++i)
+        {
+            instGen(INS_nop);
+        }
+    }
 
     if (compiler->compJitHaltMethod())
     {
