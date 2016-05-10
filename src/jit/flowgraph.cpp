@@ -17509,6 +17509,7 @@ BasicBlock*         Compiler::fgAddCodeRef(BasicBlock*      srcBlk,
         if  (add->acdStkLvl != stkDepth)
         {
             codeGen->setFrameRequired(true);
+            printf("Setting frame required #3\n");
         }
 #endif // _TARGET_X86_
 

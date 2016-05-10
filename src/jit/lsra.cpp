@@ -4019,6 +4019,7 @@ LinearScan::setFrameType()
             {
                 JITDUMP("; Decided to create an EBP based frame for ETW stackwalking (%s)\n", reason);
                 compiler->codeGen->setFrameRequired(true);
+                printf("Setting frame required #4\n");
             }
         }
 

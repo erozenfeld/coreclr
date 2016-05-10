@@ -14636,17 +14636,23 @@ void                Compiler::fgSetOptions()
     noway_assert(!compTailCallUsed || !compLocallocUsed);
 
     if (compLocallocUsed)
+    {
         codeGen->setFramePointerRequired(true);
+        printf("Setting frame pointer required #2\n");
+    }
 
 #ifdef _TARGET_X86_
 
     if (compTailCallUsed)
+    {
         codeGen->setFramePointerRequired(true);
+        printf("Setting frame pointer required #3\n");
 
 #endif // _TARGET_X86_
 
     if (!opts.genFPopt)
         codeGen->setFramePointerRequired(true);
+        printf("Setting frame pointer required #4\n");
 
     // Assert that the EH table has been initialized by now. Note that
     // compHndBBtabAllocCount never decreases; it is a high-water mark
@@ -14702,6 +14708,7 @@ void                Compiler::fgSetOptions()
     if (info.compCallUnmanaged)
     {
         codeGen->setFramePointerRequired(true);  // Setup of Pinvoke frame currently requires an EBP style frame
+        printf("Setting frame pointer required #5\n");
     }
 #endif
 
@@ -14729,6 +14736,7 @@ void                Compiler::fgSetOptions()
     if (compIsProfilerHookNeeded())
     {
         codeGen->setFramePointerRequired(true);
+        printf("Setting frame pointer required #6\n");
     }
 
     if (info.compIsVarArgs)

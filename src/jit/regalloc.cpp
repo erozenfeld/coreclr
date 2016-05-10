@@ -6105,6 +6105,7 @@ NO_DOUBLE_ALIGN:
                         printf("; Decided to create an EBP based frame for ETW stackwalking (%s)\n", reason);
 #endif
                     codeGen->setFrameRequired(true);
+                    printf("Setting frame required #5\n");
 
                     rpFrameType = FT_EBP_FRAME;
                     goto REVERSE_EBP_ENREG;

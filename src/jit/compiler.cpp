@@ -3284,11 +3284,15 @@ _SetMinOpts:
 
     if (!compIsForInlining())
     {
+        //codeGen->setFramePointerRequired(true);
         codeGen->setFramePointerRequired(false);
         codeGen->setFrameRequired(false);
 
         if (opts.MinOpts() || opts.compDbgCode)
+        {
             codeGen->setFrameRequired(true);
+            printf("Setting frame required #1\n");
+        }
 
 #if !defined(_TARGET_AMD64_)
         // The VM sets CORJIT_FLG_FRAMED for two reasons: (1) the COMPlus_JitFramed variable is set, or
@@ -3296,7 +3300,10 @@ _SetMinOpts:
         // noinline to ensure the show up on in a stack walk. But for AMD64, we don't need a frame
         // pointer for the frame to show up in stack walk.
         if (compileFlags & CORJIT_FLG_FRAMED)
+        {
             codeGen->setFrameRequired(true);
+            printf("Setting frame required #2\n");
+        }
 #endif
 
         if (compileFlags & CORJIT_FLG_RELOC)
@@ -3520,6 +3527,7 @@ void                 Compiler::compCompile(void * * methodCodePtr,
     if (opts.compDbgEnC)
     {
         codeGen->setFramePointerRequired(true);
+        printf("Setting frame pointer required #1\n");
 
         // Since we need a slots for security near ebp, its not possible
         // to do this after an Edit without shifting all the locals.
