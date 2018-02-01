@@ -1161,9 +1161,10 @@ AssertionIndex Compiler::optCreateAssertion(GenTreePtr       op1,
                 case GT_LCL_VAR:
                 {
                     //
-                    // Must either be an OAK_EQUAL or an OAK_NOT_EQUAL assertion
+                    // Must either be an OAK_EQUAL or an OAK_NOT_EQUAL or an OAK_GREATER_THAN assertion
                     //
-                    if ((assertionKind != OAK_EQUAL) && (assertionKind != OAK_NOT_EQUAL))
+                    if ((assertionKind != OAK_EQUAL) && (assertionKind != OAK_NOT_EQUAL)&&
+                        (assertionKind != OAK_GREATER_THAN) && (assertionKind != OAK_LESS_THAN_OR_EQUAL))
                     {
                         goto DONE_ASSERTION; // Don't make an assertion
                     }
@@ -1722,6 +1723,17 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex, Ge
         optMapComplementary(index, assertionIndex);
     }
 
+    if (candidateAssertion.assertionKind == OAK_GREATER_THAN)
+    {
+        AssertionIndex index = optCreateAssertion(op1, op2, OAK_LESS_THAN_OR_EQUAL);
+        optMapComplementary(index, assertionIndex);
+    }
+    else if (candidateAssertion.assertionKind == OAK_LESS_THAN_OR_EQUAL)
+    {
+        AssertionIndex index = optCreateAssertion(op1, op2, OAK_GREATER_THAN);
+        optMapComplementary(index, assertionIndex);
+    }
+
     // Are we making a subtype or exact type assertion?
     if ((candidateAssertion.op1.kind == O1K_SUBTYPE) || (candidateAssertion.op1.kind == O1K_EXACT_TYPE))
     {
@@ -1927,6 +1939,9 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTreePtr tree)
             break;
         case GT_NE:
             assertionKind = OAK_NOT_EQUAL;
+            break;
+        case GT_GT:
+            assertionKind = OAK_GREATER_THAN;
             break;
         default:
             // TODO-CQ: add other relop operands. Disabled for now to measure perf
@@ -2171,7 +2186,8 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
     AssertionDsc* inputAssertion = optGetAssertion(assertIndex);
 
     // Must be an equal or not equal assertion.
-    if (inputAssertion->assertionKind != OAK_EQUAL && inputAssertion->assertionKind != OAK_NOT_EQUAL)
+    if (inputAssertion->assertionKind != OAK_EQUAL && inputAssertion->assertionKind != OAK_NOT_EQUAL &&
+        inputAssertion->assertionKind != OAK_GREATER_THAN && inputAssertion->assertionKind != OAK_LESS_THAN_OR_EQUAL)
     {
         return NO_ASSERTION_INDEX;
     }
@@ -2182,8 +2198,6 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
         return index;
     }
 
-    optAssertionKind complementaryAssertionKind =
-        (inputAssertion->assertionKind == OAK_EQUAL) ? OAK_NOT_EQUAL : OAK_EQUAL;
     for (AssertionIndex index = 1; index <= optAssertionCount; ++index)
     {
         // Make sure assertion kinds are complementary and op1, op2 kinds match.
@@ -2984,7 +2998,45 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
             break;
         }
         AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
-        if ((curAssertion->assertionKind != OAK_EQUAL && curAssertion->assertionKind != OAK_NOT_EQUAL))
+        if (curAssertion->assertionKind != OAK_EQUAL && curAssertion->assertionKind != OAK_NOT_EQUAL)
+        {
+            continue;
+        }
+
+        if (curAssertion->op1.vn == op1->gtVNPair.GetConservative() &&
+            curAssertion->op2.vn == op2->gtVNPair.GetConservative())
+        {
+            return assertionIndex;
+        }
+    }
+    return NO_ASSERTION_INDEX;
+}
+
+/*****************************************************************************
+*
+*  Given a set of "assertions" to search for, find an assertion that is either
+*  "op1" > "op2" or "op1" <= "op2." Does a value number based comparison.
+*
+*/
+AssertionIndex Compiler::optGlobalAssertionIsGreaterOrLessThanOrEqual(ASSERT_VALARG_TP assertions,
+                                                                      GenTreePtr       op1,
+                                                                      GenTreePtr       op2)
+{
+    if (BitVecOps::IsEmpty(apTraits, assertions))
+    {
+        return NO_ASSERTION_INDEX;
+    }
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        index = 0;
+    while (iter.NextElem(&index))
+    {
+        AssertionIndex assertionIndex = GetAssertionIndex(index);
+        if (assertionIndex > optAssertionCount)
+        {
+            break;
+        }
+        AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
+        if (curAssertion->assertionKind != OAK_GREATER_THAN && curAssertion->assertionKind != OAK_LESS_THAN_OR_EQUAL)
         {
             continue;
         }
@@ -3013,7 +3065,7 @@ GenTreePtr Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, const G
     //
     // Currently only GT_EQ or GT_NE are supported Relops for AssertionProp
     //
-    if ((tree->gtOper != GT_EQ) && (tree->gtOper != GT_NE))
+    if ((tree->gtOper != GT_EQ) && (tree->gtOper != GT_NE) && (tree->gtOper != GT_GT))
     {
         return nullptr;
     }
@@ -3040,7 +3092,7 @@ GenTreePtr Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                                                   const GenTreePtr tree,
                                                   const GenTreePtr stmt)
 {
-    assert(tree->OperGet() == GT_EQ || tree->OperGet() == GT_NE);
+    assert(tree->OperGet() == GT_EQ || tree->OperGet() == GT_NE || tree->OperGet() == GT_GT);
 
     GenTreePtr newTree = tree;
     GenTreePtr op1     = tree->gtOp.gtOp1;
@@ -3051,8 +3103,18 @@ GenTreePtr Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         return nullptr;
     }
 
-    // Find an equal or not equal assertion involving "op1" and "op2".
-    AssertionIndex index = optGlobalAssertionIsEqualOrNotEqual(assertions, op1, op2);
+    AssertionIndex index = NO_ASSERTION_INDEX;
+    if (tree->OperGet() == GT_EQ || tree->OperGet() == GT_NE)
+    {
+        // Find an equal or not equal assertion involving "op1" and "op2".
+        index = optGlobalAssertionIsEqualOrNotEqual(assertions, op1, op2);
+    }
+    else if (tree->OperGet() == GT_GT)
+    {
+        // Find a greater or lessthanorequal assertion involving "op1" and "op2".
+        index = optGlobalAssertionIsGreaterOrLessThanOrEqual(assertions, op1, op2);
+    }
+
     if (index == NO_ASSERTION_INDEX)
     {
         return nullptr;
@@ -3066,6 +3128,10 @@ GenTreePtr Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     // If the assertion involves "op2" and it is a constant, then check if "op1" also has a constant value.
     if (vnStore->IsVNConstant(op2->gtVNPair.GetConservative()))
     {
+        if (tree->OperGet() == GT_GT)
+        {
+            return nullptr;
+        }
         ValueNum vnCns = op2->gtVNPair.GetConservative();
 #ifdef DEBUG
         if (verbose)
@@ -3170,6 +3236,10 @@ GenTreePtr Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         // op2 is NaN. Just turn it into a "true" or "false" yielding expression.
         if (op1->TypeGet() == TYP_DOUBLE || op1->TypeGet() == TYP_FLOAT)
         {
+            if (tree->OperGet() == GT_GT)
+            {
+                return nullptr;
+            }
             // Note we can't trust the OAK_EQUAL as the value could end up being a NaN
             // violating the assertion. However, we create OAK_EQUAL assertions for floating
             // point only on JTrue nodes, so if the condition held earlier, it will hold
@@ -3185,9 +3255,20 @@ GenTreePtr Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         else
         {
             noway_assert(varTypeIsIntegralOrI(op1->TypeGet()));
-            lvaTable[op2->gtLclVar.gtLclNum].incRefCnts(compCurBB->getBBWeight(this), this);
-            op1->AsLclVarCommon()->SetLclNum(op2->AsLclVarCommon()->GetLclNum());
-            op1->AsLclVarCommon()->SetSsaNum(op2->AsLclVarCommon()->GetSsaNum());
+            if (tree->OperGet() == GT_GT)
+            {
+                lvaTable[op2->gtLclVar.gtLclNum].decRefCnts(compCurBB->getBBWeight(this), this);
+                op1->ChangeOperConst(GT_CNS_INT);
+                op1->gtIntCon.gtIconVal = (curAssertion->assertionKind == OAK_GREATER_THAN) ? 1 : 0;
+                op2->ChangeOperConst(GT_CNS_INT);
+                op2->gtIntCon.gtIconVal = (curAssertion->assertionKind == OAK_GREATER_THAN) ? 0 : 1;
+            }
+            else
+            {
+                lvaTable[op2->gtLclVar.gtLclNum].incRefCnts(compCurBB->getBBWeight(this), this);
+                op1->AsLclVarCommon()->SetLclNum(op2->AsLclVarCommon()->GetLclNum());
+                op1->AsLclVarCommon()->SetSsaNum(op2->AsLclVarCommon()->GetSsaNum());
+            }
         }
     }
     else
@@ -3223,7 +3304,12 @@ GenTreePtr Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions,
                                                  const GenTreePtr tree,
                                                  const GenTreePtr stmt)
 {
-    assert(tree->OperGet() == GT_EQ || tree->OperGet() == GT_NE);
+    assert(tree->OperGet() == GT_EQ || tree->OperGet() == GT_NE || tree->OperGet() == GT_GT);
+
+    if (tree->OperGet() == GT_GT)
+    {
+        return nullptr;
+    }
 
     GenTreePtr op1 = tree->gtOp.gtOp1;
     GenTreePtr op2 = tree->gtOp.gtOp2;

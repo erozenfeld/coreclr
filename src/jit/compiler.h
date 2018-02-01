@@ -5942,6 +5942,8 @@ public:
         OAK_INVALID,
         OAK_EQUAL,
         OAK_NOT_EQUAL,
+        OAK_GREATER_THAN,
+        OAK_LESS_THAN_OR_EQUAL,
         OAK_SUBRANGE,
         OAK_NO_THROW,
         OAK_COUNT
@@ -6268,6 +6270,7 @@ public:
 
     // Used for Relop propagation.
     AssertionIndex optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP assertions, GenTreePtr op1, GenTreePtr op2);
+    AssertionIndex optGlobalAssertionIsGreaterOrLessThanOrEqual(ASSERT_VALARG_TP assertions, GenTreePtr op1, GenTreePtr op2);
     AssertionIndex optLocalAssertionIsEqualOrNotEqual(
         optOp1Kind op1Kind, unsigned lclNum, optOp2Kind op2Kind, ssize_t cnsVal, ASSERT_VALARG_TP assertions);
 
