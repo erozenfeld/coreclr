@@ -8284,6 +8284,16 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
     }
 
+    if (compIsForImportOnly())
+    {
+        // Don't report indirect calls for now.
+        if (call->AsCall()->gtCallType != CT_INDIRECT)
+        {
+            bool isVirtual = ((call->gtFlags && GTF_CALL_VIRT_KIND_MASK) != GTF_CALL_NONVIRT);
+            info.compCompHnd->recordCallee(call->AsCall()->gtCallMethHnd, isVirtual);
+        }
+    }
+
     //-------------------------------------------------------------------------
     // The "this" pointer for "newobj"
 
