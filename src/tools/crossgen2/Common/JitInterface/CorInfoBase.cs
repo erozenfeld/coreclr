@@ -360,6 +360,8 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __recordCallSite(IntPtr _this, IntPtr* ppException, uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
+        delegate void __recordCallee(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* methodHandle, [MarshalAs(UnmanagedType.Bool)] bool isVirtual);
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __recordRelocation(IntPtr _this, IntPtr* ppException, void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate ushort __getRelocTypeHint(IntPtr _this, IntPtr* ppException, void* target);
@@ -2762,6 +2764,19 @@ namespace Internal.JitInterface
             }
         }
 
+        static void _recordCallee(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* methodHandle, bool isVirtual)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                _this.recordCallee(methodHandle, isVirtual);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+            }
+        }
+
         static void _recordRelocation(IntPtr thisHandle, IntPtr* ppException, void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
         {
             var _this = GetThis(thisHandle);
@@ -2833,8 +2848,8 @@ namespace Internal.JitInterface
 
         static IntPtr GetUnmanagedCallbacks(out Object keepAlive)
         {
-            IntPtr * callbacks = (IntPtr *)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 179);
-            Object[] delegates = new Object[179];
+            IntPtr * callbacks = (IntPtr *)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 180);
+            Object[] delegates = new Object[180];
 
             var d0 = new __getMethodAttribs(_getMethodAttribs);
             callbacks[0] = Marshal.GetFunctionPointerForDelegate(d0);
@@ -3358,21 +3373,26 @@ namespace Internal.JitInterface
             var d173 = new __recordCallSite(_recordCallSite);
             callbacks[173] = Marshal.GetFunctionPointerForDelegate(d173);
             delegates[173] = d173;
-            var d174 = new __recordRelocation(_recordRelocation);
+
+            var d174 = new __recordCallee(_recordCallee);
             callbacks[174] = Marshal.GetFunctionPointerForDelegate(d174);
             delegates[174] = d174;
-            var d175 = new __getRelocTypeHint(_getRelocTypeHint);
+
+            var d175 = new __recordRelocation(_recordRelocation);
             callbacks[175] = Marshal.GetFunctionPointerForDelegate(d175);
             delegates[175] = d175;
-            var d176 = new __getModuleNativeEntryPointRange(_getModuleNativeEntryPointRange);
+            var d176 = new __getRelocTypeHint(_getRelocTypeHint);
             callbacks[176] = Marshal.GetFunctionPointerForDelegate(d176);
             delegates[176] = d176;
-            var d177 = new __getExpectedTargetArchitecture(_getExpectedTargetArchitecture);
+            var d177 = new __getModuleNativeEntryPointRange(_getModuleNativeEntryPointRange);
             callbacks[177] = Marshal.GetFunctionPointerForDelegate(d177);
             delegates[177] = d177;
-            var d178 = new __getJitFlags(_getJitFlags);
+            var d178 = new __getExpectedTargetArchitecture(_getExpectedTargetArchitecture);
             callbacks[178] = Marshal.GetFunctionPointerForDelegate(d178);
             delegates[178] = d178;
+            var d179 = new __getJitFlags(_getJitFlags);
+            callbacks[179] = Marshal.GetFunctionPointerForDelegate(d179);
+            delegates[179] = d179;
 
             keepAlive = delegates;
             return (IntPtr)callbacks;

@@ -184,6 +184,7 @@ struct JitInterfaceCallbacks
     int (* allocMethodBlockCounts)(void * thisHandle, CorInfoException** ppException, unsigned int count, void** pBlockCounts);
     int (* getMethodBlockCounts)(void * thisHandle, CorInfoException** ppException, void* ftnHnd, unsigned int* pCount, void** pBlockCounts, unsigned int* pNumRuns);
     void (* recordCallSite)(void * thisHandle, CorInfoException** ppException, unsigned int instrOffset, void* callSig, void* methodHandle);
+    void(* recordCallee)(void * thisHandle, CorInfoException** ppException, void* methodHandle, bool isVirtual);
     void (* recordRelocation)(void * thisHandle, CorInfoException** ppException, void* location, void* target, unsigned short fRelocType, unsigned short slotNum, int addlDelta);
     unsigned short (* getRelocTypeHint)(void * thisHandle, CorInfoException** ppException, void* target);
     void (* getModuleNativeEntryPointRange)(void * thisHandle, CorInfoException** ppException, void** pStart, void** pEnd);
@@ -1682,6 +1683,14 @@ public:
     {
         CorInfoException* pException = nullptr;
         _callbacks->recordCallSite(_thisHandle, &pException, instrOffset, callSig, methodHandle);
+        if (pException != nullptr)
+            throw pException;
+    }
+
+    virtual void recordCallee(void* methodHandle, bool isVirtual)
+    {
+        CorInfoException* pException = nullptr;
+        _callbacks->recordCallee(_thisHandle, &pException, methodHandle, isVirtual);
         if (pException != nullptr)
             throw pException;
     }

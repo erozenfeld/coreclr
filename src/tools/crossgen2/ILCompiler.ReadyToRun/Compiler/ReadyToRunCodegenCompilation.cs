@@ -201,6 +201,10 @@ namespace ILCompiler
 
         private bool _resilient;
 
+        public CallGraph CallGraph { get; }
+
+        public bool ScanILOnly { get; private set; }
+
         public new ReadyToRunCodegenNodeFactory NodeFactory { get; }
 
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
@@ -224,6 +228,8 @@ namespace ILCompiler
             _jitConfigProvider = configProvider;
 
             _inputFilePath = inputFilePath;
+
+            CallGraph = new CallGraph();
         }
 
         public override void Compile(string outputFile)
@@ -265,40 +271,70 @@ namespace ILCompiler
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
-            using (PerfEventSource.StartStopEvents.JitEvents())
+            ScanILOnly = true;
+
+            List<MethodWithGCInfo> methodsToCompile = new List<MethodWithGCInfo>();
+
+            ConditionalWeakTable<Thread, CorInfoImpl> cwt = new ConditionalWeakTable<Thread, CorInfoImpl>();
+            // Add all nodes to the call graph as roots
+            foreach (DependencyNodeCore<NodeFactory> dependency in obj)
             {
-                ConditionalWeakTable<Thread, CorInfoImpl> cwt = new ConditionalWeakTable<Thread, CorInfoImpl>();
-                foreach (DependencyNodeCore<NodeFactory> dependency in obj)
+                MethodWithGCInfo methodCodeNodeNeedingCode = dependency as MethodWithGCInfo;
+                MethodDesc method = methodCodeNodeNeedingCode.Method;
+
+                methodsToCompile.Add(methodCodeNodeNeedingCode);
+                CallGraph.AddRootNode(method);
+                try
                 {
-                    MethodWithGCInfo methodCodeNodeNeedingCode = dependency as MethodWithGCInfo;
-                    MethodDesc method = methodCodeNodeNeedingCode.Method;
+                    CorInfoImpl corInfoImpl = cwt.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this, _jitConfigProvider));
+                    corInfoImpl.CompileMethod(methodCodeNodeNeedingCode, ScanILOnly);
+                }
+                catch (TypeSystemException)
+                {
+                }
+                catch (RequiresRuntimeJitException)
+                {
+                }
+                catch (CodeGenerationFailedException) when (_resilient)
+                {
+                }
 
-                    if (Logger.IsVerbose)
-                    {
-                        string methodName = method.ToString();
-                        Logger.Writer.WriteLine("Compiling " + methodName);
-                    }
+                ScanILOnly = false;
 
-                    try
+                using (PerfEventSource.StartStopEvents.JitEvents())
+                {
+                    // TODO: sort the call graph nodes topologically to perform bottom-up compilation.
+                    foreach (var methodCodeNodeNeedingCode in methodsToCompile)
                     {
-                        using (PerfEventSource.StartStopEvents.JitMethodEvents())
+                        MethodDesc method = methodCodeNodeNeedingCode.Method;
+
+                        if (Logger.IsVerbose)
                         {
-                            CorInfoImpl corInfoImpl = cwt.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this, _jitConfigProvider));
-                            corInfoImpl.CompileMethod(methodCodeNodeNeedingCode);
+                            string methodName = method.ToString();
+                            Logger.Writer.WriteLine("Compiling " + methodName);
                         }
-                    }
-                    catch (TypeSystemException ex)
-                    {
-                        // If compilation fails, don't emit code for this method. It will be Jitted at runtime
-                        Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because: {ex.Message}");
-                    }
-                    catch (RequiresRuntimeJitException ex)
-                    {
-                        Logger.Writer.WriteLine($"Info: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
-                    }
-                    catch (CodeGenerationFailedException ex) when (_resilient)
-                    {
-                        Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
+
+                        try
+                        {
+                            using (PerfEventSource.StartStopEvents.JitMethodEvents())
+                            {
+                                CorInfoImpl corInfoImpl = cwt.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this, _jitConfigProvider));
+                                corInfoImpl.CompileMethod(methodCodeNodeNeedingCode);
+                            }
+                        }
+                        catch (TypeSystemException ex)
+                        {
+                            // If compilation fails, don't emit code for this method. It will be Jitted at runtime
+                            Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because: {ex.Message}");
+                        }
+                        catch (RequiresRuntimeJitException ex)
+                        {
+                            Logger.Writer.WriteLine($"Info: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
+                        }
+                        catch (CodeGenerationFailedException ex) when (_resilient)
+                        {
+                            Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
+                        }
                     }
                 }
             }

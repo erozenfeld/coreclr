@@ -184,7 +184,7 @@ namespace Internal.JitInterface
             return false;
         }
 
-        public void CompileMethod(IReadyToRunMethodCodeNode methodCodeNodeNeedingCode)
+        public void CompileMethod(IReadyToRunMethodCodeNode methodCodeNodeNeedingCode, bool scanOnly=false)
         {
             bool codeGotPublished = false;
             _methodCodeNode = methodCodeNodeNeedingCode;
@@ -194,7 +194,10 @@ namespace Internal.JitInterface
                 if (!ShouldSkipCompilation(methodCodeNodeNeedingCode))
                 {
                     CompileMethodInternal(methodCodeNodeNeedingCode);
-                    codeGotPublished = true;
+                    if (!scanOnly)
+                    {
+                        codeGotPublished = true;
+                    }
                 }
             }
             finally
@@ -205,6 +208,8 @@ namespace Internal.JitInterface
                 }
                 CompileMethodCleanup();
             }
+
+            CompileMethodInternal(methodCodeNodeNeedingCode, null, scanOnly);
         }
 
         private SignatureContext GetSignatureContext()
