@@ -2652,6 +2652,11 @@ void ZapInfo::recordCallSite(ULONG instrOffset, CORINFO_SIG_INFO *callSig, CORIN
     return;
 }
 
+void ZapInfo::recordCallee(CORINFO_METHOD_HANDLE methodHandle, BOOL isVirtual)
+{
+    return;
+}
+
 void ZapInfo::recordRelocation(void *location, void *target,
                                WORD fRelocType, WORD slotNum, INT32 addlDelta)
 {

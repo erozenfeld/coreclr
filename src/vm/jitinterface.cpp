@@ -11492,6 +11492,12 @@ void CEEJitInfo::recordCallSite(ULONG                 instrOffset,
     LIMITED_METHOD_CONTRACT;
 }
 
+void CEEJitInfo::recordCallee(CORINFO_METHOD_HANDLE methodHandle,
+                              BOOL                  isVirtual)
+{
+    LIMITED_METHOD_CONTRACT;
+}
+
 // This is a variant for AMD64 or other machines that
 // cannot always hold the destination address in a 32-bit location
 // A relocation is recorded if we are pre-jitting.
@@ -14097,6 +14103,15 @@ void CEEInfo::recordCallSite(
         CORINFO_SIG_INFO *    callSig,      /* IN */
         CORINFO_METHOD_HANDLE methodHandle  /* IN */
         )
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
+void CEEInfo::recordCallee(
+    CORINFO_METHOD_HANDLE methodHandle,  /* IN */
+    BOOL                  isVirtual      /* IN */
+)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

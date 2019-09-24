@@ -437,6 +437,8 @@ public:
 
     void recordCallSite(ULONG instrOffset, CORINFO_SIG_INFO *callSig, CORINFO_METHOD_HANDLE methodHandle);
 
+    void recordCallee(CORINFO_METHOD_HANDLE methodHandle, BOOL isVirtual);
+
     // Relocations
 
     void recordRelocation(void *location, void *target,

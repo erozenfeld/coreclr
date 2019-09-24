@@ -421,6 +421,11 @@ public:
             CORINFO_METHOD_HANDLE methodHandle  /* IN */
             ) = 0;
 
+    virtual void recordCallee(
+            CORINFO_METHOD_HANDLE methodHandle,  /* IN */
+            BOOL isVirtual                       /* IN */
+    ) = 0;
+
     // A relocation is recorded if we are pre-jitting.
     // A jump thunk may be inserted if we are jitting
     virtual void recordRelocation(

@@ -1079,3 +1079,26 @@ bool CompileResult::fndRecordCallSiteMethodHandle(ULONG instrOffset, CORINFO_MET
 
     return true;
 }
+
+void CompileResult::recRecordCallee(CORINFO_METHOD_HANDLE methodHandle, BOOL isVirtual)
+{
+    repRecordCallee(methodHandle, isVirtual);
+}
+
+void CompileResult::dmpRecordCallee(DWORD key, const Agnostic_RecordCallee& value)
+{
+    printf("RecordCallee key %u, value ftn-%016llX isVirtual-%u ", key,
+        value.methodHandle, value.isVirtual);
+}
+void CompileResult::repRecordCallee(CORINFO_METHOD_HANDLE methodHandle, BOOL isVirtual)
+{
+    if (RecordCallee == nullptr)
+        RecordCallee = new DenseLightWeightMap<Agnostic_RecordCallee>();
+
+    Agnostic_RecordCallee value;
+
+    value.methodHandle = (DWORDLONG)methodHandle;
+    value.isVirtual = (DWORD)isVirtual;
+
+    RecordCallee->Append(value);
+}

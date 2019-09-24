@@ -1711,6 +1711,14 @@ void interceptor_ICJI::recordCallSite(ULONG                 instrOffset, /* IN *
     return original_ICorJitInfo->recordCallSite(instrOffset, callSig, methodHandle);
 }
 
+void interceptor_ICJI::recordCallee(CORINFO_METHOD_HANDLE methodHandle, /* IN */
+                                    BOOL isVirtual                      /* IN */
+                                   )
+{
+    mcs->AddCall("recordCallee");
+    return original_ICorJitInfo->recordCallee(methodHandle, isVirtual);
+}
+
 // A relocation is recorded if we are pre-jitting.
 // A jump thunk may be inserted if we are jitting
 void interceptor_ICJI::recordRelocation(void* location,   /* IN  */
