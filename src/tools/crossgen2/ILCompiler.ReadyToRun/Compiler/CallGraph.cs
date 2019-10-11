@@ -49,10 +49,14 @@ namespace ILCompiler
 
         public CallGraphNode AddNode(MethodDesc method)
         {
-            CallGraphNode node = new CallGraphNode(method);
-            _methodDescToCallGraphNode[method] = node;
-            _nodes.Add(node);
-            return node;
+            CallGraphNode result;
+            if (!_methodDescToCallGraphNode.TryGetValue(method, out result))
+            {
+                result = new CallGraphNode(method);
+                _methodDescToCallGraphNode[method] = result;
+                _nodes.Add(result);
+            }
+            return result;
         }
 
         public void AddRootNode(MethodDesc method)
