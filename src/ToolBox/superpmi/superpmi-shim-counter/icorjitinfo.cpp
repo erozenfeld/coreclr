@@ -1712,11 +1712,19 @@ void interceptor_ICJI::recordCallSite(ULONG                 instrOffset, /* IN *
 }
 
 void interceptor_ICJI::recordCallee(CORINFO_METHOD_HANDLE methodHandle, /* IN */
-                                    BOOL isVirtual                      /* IN */
+                                    void*                 addr,         /* IN */
+                                    BOOL                  isVirtual     /* IN */
                                    )
 {
     mcs->AddCall("recordCallee");
-    return original_ICorJitInfo->recordCallee(methodHandle, isVirtual);
+    return original_ICorJitInfo->recordCallee(methodHandle, addr, isVirtual);
+}
+
+void interceptor_ICJI::recordMethodPointer(void*                 addr         /* IN */
+)
+{
+    mcs->AddCall("recordMethodPointer");
+    return original_ICorJitInfo->recordMethodPointer(addr);
 }
 
 // A relocation is recorded if we are pre-jitting.

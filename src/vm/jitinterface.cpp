@@ -11493,7 +11493,14 @@ void CEEJitInfo::recordCallSite(ULONG                 instrOffset,
 }
 
 void CEEJitInfo::recordCallee(CORINFO_METHOD_HANDLE methodHandle,
+                              void*                 addr,
                               BOOL                  isVirtual)
+{
+    LIMITED_METHOD_CONTRACT;
+}
+
+void CEEJitInfo::recordMethodPointer(void*                 addr
+                                    )
 {
     LIMITED_METHOD_CONTRACT;
 }
@@ -14110,7 +14117,16 @@ void CEEInfo::recordCallSite(
 
 void CEEInfo::recordCallee(
     CORINFO_METHOD_HANDLE methodHandle,  /* IN */
+    void*                 addr,          /* IN */
     BOOL                  isVirtual      /* IN */
+)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
+void CEEInfo::recordMethodPointer(
+    void*                 addr          /* IN */
 )
 {
     LIMITED_METHOD_CONTRACT;

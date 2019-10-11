@@ -1080,17 +1080,28 @@ bool CompileResult::fndRecordCallSiteMethodHandle(ULONG instrOffset, CORINFO_MET
     return true;
 }
 
-void CompileResult::recRecordCallee(CORINFO_METHOD_HANDLE methodHandle, BOOL isVirtual)
+void CompileResult::recRecordCallee(CORINFO_METHOD_HANDLE methodHandle, void* addr, BOOL isVirtual)
 {
-    repRecordCallee(methodHandle, isVirtual);
+    repRecordCallee(methodHandle, addr, isVirtual);
+}
+
+void CompileResult::recRecordMethodPointer(void* addr)
+{
+    repRecordMethodPointer(addr);
 }
 
 void CompileResult::dmpRecordCallee(DWORD key, const Agnostic_RecordCallee& value)
 {
-    printf("RecordCallee key %u, value ftn-%016llX isVirtual-%u ", key,
-        value.methodHandle, value.isVirtual);
+    printf("RecordCallee key %u, value ftn-%016llX addr-%016llX isVirtual-%u ", key,
+        value.methodHandle, value.addr, value.isVirtual);
 }
-void CompileResult::repRecordCallee(CORINFO_METHOD_HANDLE methodHandle, BOOL isVirtual)
+
+void CompileResult::dmpRecordMethodPointer(DWORD key, const Agnostic_RecordMethodPointer& value)
+{
+    printf("RecordMethodPointer key %u, value addr-%016llX ", key, value.addr);
+}
+
+void CompileResult::repRecordCallee(CORINFO_METHOD_HANDLE methodHandle, void* addr, BOOL isVirtual)
 {
     if (RecordCallee == nullptr)
         RecordCallee = new DenseLightWeightMap<Agnostic_RecordCallee>();
@@ -1098,7 +1109,20 @@ void CompileResult::repRecordCallee(CORINFO_METHOD_HANDLE methodHandle, BOOL isV
     Agnostic_RecordCallee value;
 
     value.methodHandle = (DWORDLONG)methodHandle;
+    value.addr = (DWORDLONG)addr;
     value.isVirtual = (DWORD)isVirtual;
 
     RecordCallee->Append(value);
+}
+
+void CompileResult::repRecordMethodPointer(void* addr)
+{
+    if (RecordMethodPointer == nullptr)
+        RecordMethodPointer = new DenseLightWeightMap<Agnostic_RecordMethodPointer>();
+
+    Agnostic_RecordMethodPointer value;
+
+    value.addr = (DWORDLONG)addr;
+
+    RecordMethodPointer->Append(value);
 }

@@ -2652,7 +2652,12 @@ void ZapInfo::recordCallSite(ULONG instrOffset, CORINFO_SIG_INFO *callSig, CORIN
     return;
 }
 
-void ZapInfo::recordCallee(CORINFO_METHOD_HANDLE methodHandle, BOOL isVirtual)
+void ZapInfo::recordCallee(CORINFO_METHOD_HANDLE methodHandle, void* addr, BOOL isVirtual)
+{
+    return;
+}
+
+void ZapInfo::recordMethodPointer(void* addr)
 {
     return;
 }

@@ -1842,11 +1842,19 @@ void MyICJI::recordCallSite(ULONG                 instrOffset, /* IN */
 }
 
 void MyICJI::recordCallee(CORINFO_METHOD_HANDLE methodHandle, /* IN */
-                          BOOL                  isVirtual
+                          void*                 addr,         /* IN */
+                          BOOL                  isVirtual     /* IN */
                           )
 {
     jitInstance->mc->cr->AddCall("recordCalee");
-    jitInstance->mc->cr->repRecordCallee(methodHandle, isVirtual);
+    jitInstance->mc->cr->repRecordCallee(methodHandle, addr, isVirtual);
+}
+
+void MyICJI::recordMethodPointer(void*          addr         /* IN */
+                                )
+{
+    jitInstance->mc->cr->AddCall("recordMethodPointer");
+    jitInstance->mc->cr->repRecordMethodPointer(addr);
 }
 
 // A relocation is recorded if we are pre-jitting.

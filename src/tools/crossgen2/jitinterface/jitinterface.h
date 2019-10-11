@@ -184,7 +184,8 @@ struct JitInterfaceCallbacks
     int (* allocMethodBlockCounts)(void * thisHandle, CorInfoException** ppException, unsigned int count, void** pBlockCounts);
     int (* getMethodBlockCounts)(void * thisHandle, CorInfoException** ppException, void* ftnHnd, unsigned int* pCount, void** pBlockCounts, unsigned int* pNumRuns);
     void (* recordCallSite)(void * thisHandle, CorInfoException** ppException, unsigned int instrOffset, void* callSig, void* methodHandle);
-    void(* recordCallee)(void * thisHandle, CorInfoException** ppException, void* methodHandle, bool isVirtual);
+    void(* recordCallee)(void * thisHandle, CorInfoException** ppException, void* methodHandle, void* addr, bool isVirtual);
+    void(*recordMethodPointer)(void * thisHandle, CorInfoException** ppException, void* addr);
     void (* recordRelocation)(void * thisHandle, CorInfoException** ppException, void* location, void* target, unsigned short fRelocType, unsigned short slotNum, int addlDelta);
     unsigned short (* getRelocTypeHint)(void * thisHandle, CorInfoException** ppException, void* target);
     void (* getModuleNativeEntryPointRange)(void * thisHandle, CorInfoException** ppException, void** pStart, void** pEnd);
@@ -1687,10 +1688,18 @@ public:
             throw pException;
     }
 
-    virtual void recordCallee(void* methodHandle, bool isVirtual)
+    virtual void recordCallee(void* methodHandle, void* addr, bool isVirtual)
     {
         CorInfoException* pException = nullptr;
-        _callbacks->recordCallee(_thisHandle, &pException, methodHandle, isVirtual);
+        _callbacks->recordCallee(_thisHandle, &pException, methodHandle, addr, isVirtual);
+        if (pException != nullptr)
+            throw pException;
+    }
+
+    virtual void recordMethodPointer(void* addr)
+    {
+        CorInfoException* pException = nullptr;
+        _callbacks->recordMethodPointer(_thisHandle, &pException, addr);
         if (pException != nullptr)
             throw pException;
     }

@@ -1045,8 +1045,12 @@ void recordCallSite(ULONG                 instrOffset, /* IN */
                     );
 
 void recordCallee(CORINFO_METHOD_HANDLE methodHandle, /* IN */
-                  BOOL isVirtual                      /* IN */
+                  void*                 addr,         /* IN */
+                  BOOL                  isVirtual     /* IN */
                   );
+
+void recordMethodPointer(void*                 addr         /* IN */
+                        );
 
 // A relocation is recorded if we are pre-jitting.
 // A jump thunk may be inserted if we are jitting

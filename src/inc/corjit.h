@@ -423,7 +423,12 @@ public:
 
     virtual void recordCallee(
             CORINFO_METHOD_HANDLE methodHandle,  /* IN */
+            void *                addr,          /* IN */
             BOOL isVirtual                       /* IN */
+    ) = 0;
+
+    virtual void recordMethodPointer(
+        void *                addr          /* IN */
     ) = 0;
 
     // A relocation is recorded if we are pre-jitting.

@@ -1623,12 +1623,22 @@ void WrapICorJitInfo::recordCallSite(
 }
 
 void WrapICorJitInfo::recordCallee(
-    CORINFO_METHOD_HANDLE methodHandle  /* IN */,
-    BOOL                  isVirtual     /* IN */)
+    CORINFO_METHOD_HANDLE methodHandle,  /* IN */
+    void *                addr,          /* IN */
+    BOOL                  isVirtual      /* IN */)
 {
     API_ENTER(recordCallee);
-    wrapHnd->recordCallee(methodHandle, isVirtual);
+    wrapHnd->recordCallee(methodHandle, addr, isVirtual);
     API_LEAVE(recordCallee);
+}
+
+void WrapICorJitInfo::recordMethodPointer(
+    void *                addr          /* IN */
+)
+{
+    API_ENTER(recordMethodPointer);
+    wrapHnd->recordMethodPointer(addr);
+    API_LEAVE(recordMethodPointer);
 }
 
 void WrapICorJitInfo::recordRelocation(

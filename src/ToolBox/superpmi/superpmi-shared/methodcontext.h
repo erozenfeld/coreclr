@@ -1352,7 +1352,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 175
+// Highest packet number: 176
 // *************************************************************************************
 enum mcPackets
 {
@@ -1531,6 +1531,7 @@ enum mcPackets
     PacketCR_SetVars                           = 130,
     PacketCR_RecordCallSite                    = 146, // Added 10/28/2013 - to support indirect calls
     PacketCR_RecordCallee                      = 175,
+    PacketCR_RecordMethodPointer               = 176,
 };
 
 #endif

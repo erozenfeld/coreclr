@@ -153,7 +153,12 @@ public:
     struct Agnostic_RecordCallee
     {
         DWORDLONG                  methodHandle;
+        DWORDLONG                  addr;
         DWORD                      isVirtual;
+    };
+    struct Agnostic_RecordMethodPointer
+    {
+        DWORDLONG                  addr;
     };
 #pragma pack(pop)
 
@@ -294,9 +299,13 @@ public:
     bool fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO* pCallSig);
     bool fndRecordCallSiteMethodHandle(ULONG instrOffset, CORINFO_METHOD_HANDLE* pMethodHandle);
 
-    void recRecordCallee(CORINFO_METHOD_HANDLE methodHandle, BOOL isVirtual);
+    void recRecordCallee(CORINFO_METHOD_HANDLE methodHandle, void* addr, BOOL isVirtual);
     void dmpRecordCallee(DWORD key, const Agnostic_RecordCallee& value);
-    void repRecordCallee(CORINFO_METHOD_HANDLE methodHandle, BOOL isVirtual);
+    void repRecordCallee(CORINFO_METHOD_HANDLE methodHandle, void* addr, BOOL isVirtual);
+
+    void recRecordMethodPointer(void* addr);
+    void dmpRecordMethodPointer(DWORD key, const Agnostic_RecordMethodPointer& value);
+    void repRecordMethodPointer(void* addr);
 
     DOUBLE    secondsToCompile;
     ULONGLONG clockCyclesToCompile;

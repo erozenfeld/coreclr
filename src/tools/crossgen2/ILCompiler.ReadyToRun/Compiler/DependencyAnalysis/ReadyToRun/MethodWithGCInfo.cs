@@ -27,6 +27,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private NativeVarInfo[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
 
+
         public MethodWithGCInfo(MethodDesc methodDesc, SignatureContext signatureContext)
         {
             GCInfoNode = new MethodGCInfoNode(this);
@@ -41,6 +42,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public MethodDesc Method => _method;
+
+        public bool ScheduledForScanning { get; set; }
+
+        public bool Scanned { get; set; }
 
         public bool IsEmpty => _methodCode.Data.Length == 0;
 

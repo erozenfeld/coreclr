@@ -2850,9 +2850,61 @@ namespace Internal.JitInterface
         {
         }
 
-        private void recordCallee(CORINFO_METHOD_STRUCT_* methodHandle, bool isVirtual)
+        private void recordCallee(CORINFO_METHOD_STRUCT_* methodHandle, void* addr, bool isVirtual)
         {
-            this._compilation.CallGraph.AddGraphEdge(MethodBeingCompiled, HandleToObject(methodHandle));
+            bool isCall = true;
+            recordMethod(addr, isCall);
+        }
+
+        private void recordMethodPointer(void* addr)
+        {
+            bool isCall = false;
+            recordMethod(addr, isCall);
+        }
+
+        private void recordMethod(void* addr, bool isCall)
+        {
+            object method = HandleToObject((IntPtr)addr);
+
+            switch (method)
+            {
+                case LocalMethodImport localMethodImport:
+                    recordLocalMethodImport(localMethodImport.MethodCodeNode, isCall);
+                    break;
+                case DelayLoadHelperMethodImport delayLoadMethodImport:
+                    foreach (var dependencyListEntry in delayLoadMethodImport.GetStaticDependencies(_compilation.NodeFactory))
+                    {
+                        if (dependencyListEntry.Node is LocalMethodImport localMethodImport)
+                        {
+                            recordLocalMethodImport(localMethodImport.MethodCodeNode, isCall);
+                        }
+                    }
+                    break;
+                case PrecodeMethodImport precodeMethodImport:
+                    foreach (var dependencyListEntry in precodeMethodImport.GetStaticDependencies(_compilation.NodeFactory))
+                    {
+                        if (dependencyListEntry.Node is MethodWithGCInfo methodNode)
+                        {
+                            recordLocalMethodImport(methodNode, isCall);
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        private void recordLocalMethodImport(MethodWithGCInfo methodNode, bool isCall)
+        {
+            if (isCall)
+            {
+                this._compilation.CallGraph.AddGraphEdge(MethodBeingCompiled, methodNode.Method);
+            }
+            if (!methodNode.ScheduledForScanning)
+            {
+                methodNode.ScheduledForScanning = true;
+                this._compilation.MethodsToScan.Enqueue(methodNode);
+            }
         }
 
         private ArrayBuilder<Relocation> _relocs;
