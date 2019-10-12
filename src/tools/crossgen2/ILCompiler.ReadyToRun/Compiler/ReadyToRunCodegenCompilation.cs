@@ -276,7 +276,6 @@ namespace ILCompiler
             ScanILOnly = true;
 
             MethodsToScan = new Queue<MethodWithGCInfo>();
-            List<MethodWithGCInfo> methodsToCompile = new List<MethodWithGCInfo>();
 
             ConditionalWeakTable<Thread, CorInfoImpl> cwt = new ConditionalWeakTable<Thread, CorInfoImpl>();
             // Add all nodes to the call graph as roots
@@ -293,13 +292,18 @@ namespace ILCompiler
 
                 MethodsToScan.Enqueue(methodCodeNodeNeedingCode);
                 methodCodeNodeNeedingCode.ScheduledForScanning = true;
-                CallGraph.AddRootNode(method);
+                CallGraph.AddRootNode(methodCodeNodeNeedingCode);
             }
 
-            while(MethodsToScan.Count > 0)
+            if (MethodsToScan.Count == 0)
+            {
+                return;
+            }
+
+            while (MethodsToScan.Count > 0)
             {
                 MethodWithGCInfo method = MethodsToScan.Dequeue();
-                CallGraph.AddNode(method.Method);
+                CallGraph.AddNode(method);
                 try
                 {
                     CorInfoImpl corInfoImpl = cwt.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this, _jitConfigProvider));
@@ -315,7 +319,6 @@ namespace ILCompiler
                 {
                 }
                 method.Scanned = true;
-                methodsToCompile.Add(method);
             }
 
             ScanILOnly = false;
@@ -323,8 +326,9 @@ namespace ILCompiler
             using (PerfEventSource.StartStopEvents.JitEvents())
             {
                 // TODO: sort the call graph nodes topologically to perform bottom-up compilation.
-                foreach (var methodCodeNodeNeedingCode in methodsToCompile)
+                foreach (var callGraphNode in CallGraph.GetNodes())
                 {
+                    MethodWithGCInfo methodCodeNodeNeedingCode = callGraphNode.Method;
                     MethodDesc method = methodCodeNodeNeedingCode.Method;
 
                     if (Logger.IsVerbose)

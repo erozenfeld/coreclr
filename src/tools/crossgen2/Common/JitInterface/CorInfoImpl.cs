@@ -2898,7 +2898,7 @@ namespace Internal.JitInterface
         {
             if (isCall)
             {
-                this._compilation.CallGraph.AddGraphEdge(MethodBeingCompiled, methodNode.Method);
+                this._compilation.CallGraph.AddGraphEdge((MethodWithGCInfo)_methodCodeNode, methodNode);
             }
             if (!methodNode.ScheduledForScanning)
             {

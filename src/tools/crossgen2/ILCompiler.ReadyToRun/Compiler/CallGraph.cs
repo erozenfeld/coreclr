@@ -13,7 +13,7 @@ namespace ILCompiler
 {
     public class CallGraphNode
     {
-        public CallGraphNode(MethodDesc method)
+        public CallGraphNode(MethodWithGCInfo method)
         {
             Method = method;
         }
@@ -28,7 +28,7 @@ namespace ILCompiler
             _callees.Add(callee);
         }
 
-        public MethodDesc Method { get; private set; }
+        public MethodWithGCInfo Method { get; private set; }
 
         List<CallGraphNode> _callees;
     }
@@ -37,43 +37,43 @@ namespace ILCompiler
     {
         HashSet<CallGraphNode> _rootNodes;
         HashSet<CallGraphNode> _nodes;
-        Dictionary<MethodDesc, CallGraphNode> _methodDescToCallGraphNode;
+        Dictionary<MethodWithGCInfo, CallGraphNode> _methodToCallGraphNode;
 
         public CallGraph()
         {
             _rootNodes = new HashSet<CallGraphNode>();
             _nodes = new HashSet<CallGraphNode>();
-            _methodDescToCallGraphNode = new Dictionary<MethodDesc, CallGraphNode>();
+            _methodToCallGraphNode = new Dictionary<MethodWithGCInfo, CallGraphNode>();
 
         }
 
-        public CallGraphNode AddNode(MethodDesc method)
+        public CallGraphNode AddNode(MethodWithGCInfo method)
         {
             CallGraphNode result;
-            if (!_methodDescToCallGraphNode.TryGetValue(method, out result))
+            if (!_methodToCallGraphNode.TryGetValue(method, out result))
             {
                 result = new CallGraphNode(method);
-                _methodDescToCallGraphNode[method] = result;
+                _methodToCallGraphNode[method] = result;
                 _nodes.Add(result);
             }
             return result;
         }
 
-        public void AddRootNode(MethodDesc method)
+        public void AddRootNode(MethodWithGCInfo method)
         {
             CallGraphNode node = AddNode(method);
             _rootNodes.Add(node);
         }
 
-        public void AddGraphEdge(MethodDesc caller, MethodDesc callee)
+        public void AddGraphEdge(MethodWithGCInfo caller, MethodWithGCInfo callee)
         {
-            Console.WriteLine("Adding call graph edge from {0} to {1}", caller.ToString(), callee.ToString());
+            //Console.WriteLine("Adding call graph edge from {0} to {1}", caller.ToString(), callee.ToString());
             CallGraphNode calleeNode;
-            if (!_methodDescToCallGraphNode.TryGetValue(callee, out calleeNode))
+            if (!_methodToCallGraphNode.TryGetValue(callee, out calleeNode))
             {
                 calleeNode = new CallGraphNode(callee);
             }
-            _methodDescToCallGraphNode[caller].AddCallee(calleeNode);
+            _methodToCallGraphNode[caller].AddCallee(calleeNode);
         }
 
         public ICollection<CallGraphNode> GetNodes()
