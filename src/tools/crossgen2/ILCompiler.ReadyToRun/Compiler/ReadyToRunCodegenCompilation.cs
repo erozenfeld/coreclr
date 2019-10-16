@@ -325,8 +325,9 @@ namespace ILCompiler
 
             using (PerfEventSource.StartStopEvents.JitEvents())
             {
-                // TODO: sort the call graph nodes topologically to perform bottom-up compilation.
-                foreach (var callGraphNode in CallGraph.GetNodes())
+                // Perform bottom-up compilation.
+                ICollection<CallGraphNode> postOrder = CallGraph.GetPostOrder();
+                foreach (var callGraphNode in postOrder)
                 {
                     MethodWithGCInfo methodCodeNodeNeedingCode = callGraphNode.Method;
                     MethodDesc method = methodCodeNodeNeedingCode.Method;

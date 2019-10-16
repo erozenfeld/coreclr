@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
@@ -20,17 +21,20 @@ namespace ILCompiler
 
         public void AddCallee(CallGraphNode callee)
         {
-            if (_callees == null)
+            if (Callees == null)
             {
-                _callees = new List<CallGraphNode>();
+                Callees = new HashSet<CallGraphNode>();
             }
 
-            _callees.Add(callee);
+            Callees.Add(callee);
         }
 
         public MethodWithGCInfo Method { get; private set; }
 
-        List<CallGraphNode> _callees;
+        public bool IsDiscovered { get; set; }
+        public bool IsCompleted { get; set; }
+
+        public HashSet<CallGraphNode> Callees { get; set; }
     }
 
     public class CallGraph
@@ -38,6 +42,7 @@ namespace ILCompiler
         HashSet<CallGraphNode> _rootNodes;
         HashSet<CallGraphNode> _nodes;
         Dictionary<MethodWithGCInfo, CallGraphNode> _methodToCallGraphNode;
+        bool _computedOrder;
 
         public CallGraph()
         {
@@ -68,17 +73,69 @@ namespace ILCompiler
         public void AddGraphEdge(MethodWithGCInfo caller, MethodWithGCInfo callee)
         {
             //Console.WriteLine("Adding call graph edge from {0} to {1}", caller.ToString(), callee.ToString());
-            CallGraphNode calleeNode;
-            if (!_methodToCallGraphNode.TryGetValue(callee, out calleeNode))
-            {
-                calleeNode = new CallGraphNode(callee);
-            }
+            CallGraphNode calleeNode = AddNode(callee);
             _methodToCallGraphNode[caller].AddCallee(calleeNode);
         }
 
         public ICollection<CallGraphNode> GetNodes()
         {
             return _nodes;
+        }
+
+        public ICollection<CallGraphNode> GetPostOrder()
+        {
+            if (_computedOrder)
+            {
+                foreach (CallGraphNode node in _nodes)
+                {
+                    node.IsDiscovered = false;
+                    node.IsCompleted = false;
+                }
+            }
+
+            Stack<CallGraphNode> stack = new Stack<CallGraphNode>(_nodes.Count);
+            List<CallGraphNode> result = new List<CallGraphNode>();
+            foreach(CallGraphNode root in _nodes)
+            {
+                if (root.IsCompleted)
+                {
+                    continue;
+                }
+                else
+                {
+                    Debug.Assert(!root.IsDiscovered);
+                    stack.Push(root);
+                    root.IsDiscovered = true;
+                }
+
+                while (stack.Count != 0)
+                {
+                    CallGraphNode node = stack.Peek();
+                    bool pushedSuccessor = false;
+                    if (node.Callees != null)
+                    {
+                        foreach (CallGraphNode successor in node.Callees)
+                        {
+                            if (!successor.IsDiscovered)
+                            {
+                                stack.Push(successor);
+                                successor.IsDiscovered = true;
+                                pushedSuccessor = true;
+                            }
+                        }
+                    }
+
+                    if (!pushedSuccessor)
+                    {
+                        stack.Pop();
+                        result.Add(node);
+                        node.IsCompleted = true;
+                    }
+                }
+            }
+
+            _computedOrder = true;
+            return result;
         }
     }
 }
