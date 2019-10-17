@@ -307,7 +307,7 @@ namespace ILCompiler
                 try
                 {
                     CorInfoImpl corInfoImpl = cwt.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this, _jitConfigProvider));
-                    corInfoImpl.CompileMethod(methodCodeNodeNeedingCode, ScanILOnly);
+                    corInfoImpl.CompileMethod(method, ScanILOnly);
                 }
                 catch (TypeSystemException)
                 {
