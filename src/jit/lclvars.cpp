@@ -3909,6 +3909,11 @@ void Compiler::lvaMarkLocalVars()
     const bool isRecompute = false;
     lvaComputeRefCounts(isRecompute, setSlotNumbers);
 
+    if (opts.OptimizationEnabled())
+    {
+        lvaComputeUnusedParameters();
+    }
+
     // If we're not optimizing, we're done.
     if (opts.OptimizationDisabled())
     {
@@ -4125,6 +4130,60 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             }
         }
     }
+}
+
+//------------------------------------------------------------------------
+// lvaComputeUnusedParameters: compute and report unused parameters
+//
+
+void Compiler::lvaComputeUnusedParameters()
+{
+    BitVecTraits bitVecTraits(lvaCount, this);
+    BitVec       unusedParams = BitVecOps::MakeFull(&bitVecTraits);
+
+    for (unsigned lclNum = 0; lclNum < lvaCount; ++lclNum)
+    {
+        LclVarDsc* varDsc = &lvaTable[lclNum];
+
+        if (!varDsc->lvIsParam || (varDsc->lvRefCnt() != 0))
+        {
+            BitVecOps::RemoveElemD(&bitVecTraits, unusedParams, lclNum);
+        }
+
+        if (varDsc->lvIsStructField && (varDsc->lvRefCnt() != 0))
+        {
+            LclVarDsc* parentvarDsc = &lvaTable[varDsc->lvParentLcl];
+            if (parentvarDsc->lvIsParam)
+            {
+                BitVecOps::RemoveElemD(&bitVecTraits, unusedParams, varDsc->lvParentLcl);
+            }
+        }
+    }
+
+    if (!BitVecOps::IsEmpty(&bitVecTraits, unusedParams))
+    {
+        unsigned     unusedParamsBits = 0;
+        unsigned     paramCount = 0;
+        for (unsigned lclNum = 0;
+             (lclNum < lvaCount) && (paramCount < sizeof(unusedParamsBits) * BitSetSupport::BitsInByte);
+             ++lclNum)
+        {
+            LclVarDsc* varDsc = &lvaTable[lclNum];
+            if (varDsc->lvIsParam)
+            {
+                if (BitVecOps::IsMember(&bitVecTraits, unusedParams, lclNum))
+                {
+                    unusedParamsBits |= (1 << paramCount);
+#ifdef DEBUG
+                    if (verbose)
+                    {
+                        printf("Unused parameter: V%02u\n", lclNum);
+                    }
+#endif
+                }
+                ++paramCount;
+            }
+        }
 }
 
 void Compiler::lvaAllocOutgoingArgSpaceVar()
