@@ -431,6 +431,14 @@ public:
         void *                addr          /* IN */
     ) = 0;
 
+    virtual void recordUnusedParameters(
+        UINT32 params
+    ) = 0;
+
+    virtual UINT32 getUnusedParameters(
+        CORINFO_METHOD_HANDLE methodHandle
+    ) = 0;
+
     // A relocation is recorded if we are pre-jitting.
     // A jump thunk may be inserted if we are jitting
     virtual void recordRelocation(

@@ -11505,6 +11505,19 @@ void CEEJitInfo::recordMethodPointer(void*                 addr
     LIMITED_METHOD_CONTRACT;
 }
 
+void CEEJitInfo::recordUnusedParameters(UINT32  parameters
+                                       )
+{
+    LIMITED_METHOD_CONTRACT;
+}
+
+UINT32 CEEJitInfo::getUnusedParameters(CORINFO_METHOD_HANDLE methodHandle
+)
+{
+    LIMITED_METHOD_CONTRACT;
+    return 0;
+}
+
 // This is a variant for AMD64 or other machines that
 // cannot always hold the destination address in a 32-bit location
 // A relocation is recorded if we are pre-jitting.
@@ -14127,6 +14140,22 @@ void CEEInfo::recordCallee(
 
 void CEEInfo::recordMethodPointer(
     void*                 addr          /* IN */
+)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
+void CEEInfo::recordUnusedParameters(
+    UINT32                 params          /* IN */
+)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
+UINT32 CEEInfo::getUnusedParameters(
+    CORINFO_METHOD_HANDLE methodHandle          /* IN */
 )
 {
     LIMITED_METHOD_CONTRACT;

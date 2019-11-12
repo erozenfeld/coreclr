@@ -1318,6 +1318,10 @@ public:
     void dmpGetStringConfigValue(DWORD nameIndex, DWORD result);
     const WCHAR* repGetStringConfigValue(const WCHAR* name);
 
+    void recGetUnusedParameters(CORINFO_METHOD_HANDLE methodHandle, UINT32 result);
+    void dmpGetUnusedParameters(DWORDLONG methodHandle, DWORD result);
+    UINT32 repGetUnusedParameters(CORINFO_METHOD_HANDLE methodHandle);
+
     struct Environment
     {
         Environment() : getIntConfigValue(nullptr), getStingConfigValue(nullptr)
@@ -1352,7 +1356,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 176
+// Highest packet number: 178
 // *************************************************************************************
 enum mcPackets
 {
@@ -1506,6 +1510,7 @@ enum mcPackets
     Packet_SatisfiesClassConstraints                     = 110,
     Packet_SatisfiesMethodConstraints                    = 111,
     Packet_ShouldEnforceCallvirtRestriction              = 112,
+    Packet_GetUnusedParameters                           = 178,
 
     PacketCR_AddressMap                        = 113,
     PacketCR_AllocMethodBlockCounts            = 131,
@@ -1532,6 +1537,7 @@ enum mcPackets
     PacketCR_RecordCallSite                    = 146, // Added 10/28/2013 - to support indirect calls
     PacketCR_RecordCallee                      = 175,
     PacketCR_RecordMethodPointer               = 176,
+    PacketCR_RecordUnusedParameters            = 177,
 };
 
 #endif

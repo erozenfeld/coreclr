@@ -307,6 +307,10 @@ public:
     void dmpRecordMethodPointer(DWORD key, const Agnostic_RecordMethodPointer& value);
     void repRecordMethodPointer(void* addr);
 
+    void recRecordUnusedParameters(UINT32 params);
+    void dmpRecordUnusedParameters(DWORD key, DWORD value);
+    void repRecordUnusedParameters(UINT32 params);
+
     DOUBLE    secondsToCompile;
     ULONGLONG clockCyclesToCompile;
 

@@ -2662,6 +2662,16 @@ void ZapInfo::recordMethodPointer(void* addr)
     return;
 }
 
+void ZapInfo::recordUnusedParameters(UINT32 params)
+{
+    return;
+}
+
+UINT32 ZapInfo::getUnusedParameters(CORINFO_METHOD_HANDLE methodHandle)
+{
+    return 0;
+}
+
 void ZapInfo::recordRelocation(void *location, void *target,
                                WORD fRelocType, WORD slotNum, INT32 addlDelta)
 {

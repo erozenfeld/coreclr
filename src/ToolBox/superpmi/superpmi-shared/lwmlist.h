@@ -159,6 +159,7 @@ LWM(TryResolveToken, Agnostic_CORINFO_RESOLVED_TOKENin, TryResolveTokenValue)
 LWM(SatisfiesClassConstraints, DWORDLONG, DWORD)
 LWM(SatisfiesMethodConstraints, DLDL, DWORD)
 LWM(ShouldEnforceCallvirtRestriction, DWORDLONG, DWORD)
+LWM(GetUnusedParameters, DWORDLONG, DWORD)
 
 #undef LWM
 #undef DENSELWM

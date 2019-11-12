@@ -441,6 +441,10 @@ public:
 
     void recordMethodPointer(void* addr);
 
+    void recordUnusedParameters(UINT32 params);
+
+    UINT32 getUnusedParameters(CORINFO_METHOD_HANDLE methodHandle);
+
     // Relocations
 
     void recordRelocation(void *location, void *target,

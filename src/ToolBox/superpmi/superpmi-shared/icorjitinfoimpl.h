@@ -1052,6 +1052,12 @@ void recordCallee(CORINFO_METHOD_HANDLE methodHandle, /* IN */
 void recordMethodPointer(void*                 addr         /* IN */
                         );
 
+void recordUnusedParameters(UINT32 params    /* IN */
+);
+
+UINT32 getUnusedParameters(CORINFO_METHOD_HANDLE methodHandle  /* IN */
+);
+
 // A relocation is recorded if we are pre-jitting.
 // A jump thunk may be inserted if we are jitting
 void recordRelocation(void* location,   /* IN  */

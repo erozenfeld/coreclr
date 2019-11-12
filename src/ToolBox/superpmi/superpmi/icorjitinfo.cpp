@@ -1857,6 +1857,20 @@ void MyICJI::recordMethodPointer(void*          addr         /* IN */
     jitInstance->mc->cr->repRecordMethodPointer(addr);
 }
 
+void MyICJI::recordUnusedParameters(UINT32          params         /* IN */
+)
+{
+    jitInstance->mc->cr->AddCall("recordUnusedParameters");
+    jitInstance->mc->cr->repRecordUnusedParameters(params);
+}
+
+UINT32 MyICJI::getUnusedParameters(CORINFO_METHOD_HANDLE methodHandle         /* IN */
+)
+{
+    jitInstance->mc->cr->AddCall("getUnusedParameters");
+    return jitInstance->mc->repGetUnusedParameters(methodHandle);
+}
+
 // A relocation is recorded if we are pre-jitting.
 // A jump thunk may be inserted if we are jitting
 void MyICJI::recordRelocation(void* location,   /* IN  */

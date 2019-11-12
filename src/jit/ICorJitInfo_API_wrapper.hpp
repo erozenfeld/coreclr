@@ -1641,6 +1641,25 @@ void WrapICorJitInfo::recordMethodPointer(
     API_LEAVE(recordMethodPointer);
 }
 
+void WrapICorJitInfo::recordUnusedParameters(
+    UINT32                params          /* IN */
+)
+{
+    API_ENTER(recordUnusedParameters);
+    wrapHnd->recordUnusedParameters(params);
+    API_LEAVE(recordUnusedParameters);
+}
+
+UINT32 WrapICorJitInfo::getUnusedParameters(
+    CORINFO_METHOD_HANDLE methodHandle,  /* IN */
+)
+{
+    API_ENTER(getUnusedParameters);
+    UINT32 result = wrapHnd->getUnusedParameters(methodHandle);
+    API_LEAVE(getUnusedParameters);
+    return result;
+}
+
 void WrapICorJitInfo::recordRelocation(
         void *location, /* IN  */
         void *target, /* IN  */

@@ -6610,3 +6610,24 @@ bool MethodContext::IsStringContentEqual(LightWeightMap<DWORD, DWORD>* prev, Lig
         return (prev == curr);
     }
 }
+
+void MethodContext::recGetUnusedParameters(CORINFO_METHOD_HANDLE methodHandle, UINT32 result)
+{
+    if (GetUnusedParameters == nullptr)
+        GetUnusedParameters = new LightWeightMap<DWORDLONG, DWORD>();
+
+    GetUnusedParameters->Add((DWORDLONG)methodHandle, (DWORD)result);
+}
+void MethodContext::dmpGetUnusedParameters(DWORDLONG key, DWORD value)
+{
+    printf("GetUnusedParameters key method=%016llX result=%d", key, value);
+}
+UINT32 MethodContext::repGetUnusedParameters(CORINFO_METHOD_HANDLE methodHandle)
+{
+    DWORDLONG key = (DWORDLONG)methodHandle;
+
+    AssertCodeMsg(GetUnusedParameters->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
+        (DWORDLONG)methodHandle);
+    UINT32 value = (UINT32)GetUnusedParameters->Get(key);
+    return value;
+}

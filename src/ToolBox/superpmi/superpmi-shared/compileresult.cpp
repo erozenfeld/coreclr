@@ -1085,20 +1085,10 @@ void CompileResult::recRecordCallee(CORINFO_METHOD_HANDLE methodHandle, void* ad
     repRecordCallee(methodHandle, addr, isVirtual);
 }
 
-void CompileResult::recRecordMethodPointer(void* addr)
-{
-    repRecordMethodPointer(addr);
-}
-
 void CompileResult::dmpRecordCallee(DWORD key, const Agnostic_RecordCallee& value)
 {
     printf("RecordCallee key %u, value ftn-%016llX addr-%016llX isVirtual-%u ", key,
         value.methodHandle, value.addr, value.isVirtual);
-}
-
-void CompileResult::dmpRecordMethodPointer(DWORD key, const Agnostic_RecordMethodPointer& value)
-{
-    printf("RecordMethodPointer key %u, value addr-%016llX ", key, value.addr);
 }
 
 void CompileResult::repRecordCallee(CORINFO_METHOD_HANDLE methodHandle, void* addr, BOOL isVirtual)
@@ -1115,6 +1105,16 @@ void CompileResult::repRecordCallee(CORINFO_METHOD_HANDLE methodHandle, void* ad
     RecordCallee->Append(value);
 }
 
+void CompileResult::recRecordMethodPointer(void* addr)
+{
+    repRecordMethodPointer(addr);
+}
+
+void CompileResult::dmpRecordMethodPointer(DWORD key, const Agnostic_RecordMethodPointer& value)
+{
+    printf("RecordMethodPointer key %u, value addr-%016llX ", key, value.addr);
+}
+
 void CompileResult::repRecordMethodPointer(void* addr)
 {
     if (RecordMethodPointer == nullptr)
@@ -1125,4 +1125,22 @@ void CompileResult::repRecordMethodPointer(void* addr)
     value.addr = (DWORDLONG)addr;
 
     RecordMethodPointer->Append(value);
+}
+
+void CompileResult::recRecordUnusedParameters(UINT32 params)
+{
+    repRecordUnusedParameters(params);
+}
+
+void CompileResult::dmpRecordUnusedParameters(DWORD key, DWORD value)
+{
+    printf("RecordUnusedParameters key %u, value params-%016llX ", key, value);
+}
+
+void CompileResult::repRecordUnusedParameters(UINT32 params)
+{
+    if (RecordUnusedParameters == nullptr)
+        RecordUnusedParameters = new DenseLightWeightMap<DWORD>();
+
+    RecordUnusedParameters->Append((DWORD)params);
 }

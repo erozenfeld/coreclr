@@ -2171,6 +2171,23 @@ void interceptor_ICJI::recordMethodPointer(void*                 addr         /*
     mc->cr->recRecordMethodPointer(addr);
 }
 
+void interceptor_ICJI::recordUnusedParameters(UINT32             params         /* IN */
+)
+{
+    mc->cr->AddCall("recordUnusedParameters");
+    original_ICorJitInfo->recordUnusedParameters(params);
+    mc->cr->recRecordUnusedParameters(params);
+}
+
+UINT32 interceptor_ICJI::getUnusedParameters(CORINFO_METHOD_HANDLE methodHandle /* IN */
+)
+{
+    mc->cr->AddCall("getUnusedParameters");
+    UINT32 result = original_ICorJitInfo->getUnusedParameters(methodHandle);
+    mc->recGetUnusedParameters(methodHandle, result);
+    return result;
+}
+
 // A relocation is recorded if we are pre-jitting.
 // A jump thunk may be inserted if we are jitting
 void interceptor_ICJI::recordRelocation(void* location,   /* IN  */
