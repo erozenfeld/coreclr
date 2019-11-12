@@ -1834,6 +1834,10 @@ public:
     {
         return argCount;
     }
+    void DecrementArgTableSize()
+    {
+        argTableSize--;
+    }
     fgArgTabEntry** ArgTable()
     {
         return argTable;

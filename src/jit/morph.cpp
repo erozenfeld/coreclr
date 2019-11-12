@@ -2764,6 +2764,13 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     //
     call->fgArgInfo = new (this, CMK_Unknown) fgArgInfo(this, call, numArgs);
 
+    unsigned int unusedParameters = 0;
+    if ((call->gtCallType == CT_USER_FUNC) && ((call->gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_NONVIRT))
+    {
+        unusedParameters = info.compCompHnd->getUnusedParameters(call->gtCallMethHnd);
+    }
+
+    unsigned           newArgIndex = argIndex;
     // Add the 'this' argument value, if present.
     if (call->gtCallThisArg != nullptr)
     {
@@ -2772,10 +2779,30 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         assert(call->gtCallType == CT_USER_FUNC || call->gtCallType == CT_INDIRECT);
         assert(varTypeIsGC(argx) || (argx->gtType == TYP_I_IMPL));
 
-        // This is a register argument - put it in the table.
-        call->fgArgInfo->AddRegArg(argIndex, argx, call->gtCallThisArg, genMapIntRegArgNumToRegNum(intArgRegNum), 1, 1,
-                                   false, callIsVararg UNIX_AMD64_ABI_ONLY_ARG(REG_STK) UNIX_AMD64_ABI_ONLY_ARG(0)
-                                              UNIX_AMD64_ABI_ONLY_ARG(0) UNIX_AMD64_ABI_ONLY_ARG(nullptr));
+        bool thisIsUnused = (((argx->gtFlags & GTF_ALL_EFFECT) == 0) && ((unusedParameters & 1) != 0));
+
+        if (thisIsUnused)
+        {
+            if (argx->gtType == TYP_I_IMPL)
+            {
+                call->gtCallThisArg = nullptr;
+                call->fgArgInfo->DecrementArgTableSize();
+            }
+            else
+            {
+                argx = new (this, GT_CNS_INT) GenTreeIntCon(argx->gtType, 0);
+                call->gtCallThisArg->SetNode(argx);
+            }
+        }
+
+        if (call->gtCallThisArg != nullptr)
+        {
+            // This is a register argument - put it in the table.
+            call->fgArgInfo->AddRegArg(argIndex, argx, call->gtCallThisArg, genMapIntRegArgNumToRegNum(intArgRegNum), 1, 1,
+                false, callIsVararg UNIX_AMD64_ABI_ONLY_ARG(REG_STK) UNIX_AMD64_ABI_ONLY_ARG(0)
+                UNIX_AMD64_ABI_ONLY_ARG(0) UNIX_AMD64_ABI_ONLY_ARG(nullptr));
+            newArgIndex++;
+        }
 
         intArgRegNum++;
 #ifdef WINDOWS_AMD64_ABI
@@ -2871,6 +2898,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
 #endif // UNIX_AMD64_ABI
 
+    GenTreeCall::Use** argPtr      = &(call->gtCallArgs);
     for (args = call->gtCallArgs; args != nullptr; args = args->GetNext(), argIndex++)
     {
         argx                    = args->GetNode();
@@ -3322,8 +3350,17 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         }
 #endif // _TARGET_ARM_
 
+        bool argIsUnused = (((argx->gtFlags & GTF_ALL_EFFECT) == 0) && (unusedParameters & (1 << argIndex)) != 0);
+
+        if (argIsUnused && varTypeIsGC(argx))
+        {
+            argx = new (this, GT_CNS_INT) GenTreeIntCon(argx->gtType, 0);
+            args->SetNode(argx);
+            argIsUnused = false;
+        }
+
         // Now create the fgArgTabEntry.
-        fgArgTabEntry* newArgEntry;
+        fgArgTabEntry* newArgEntry = nullptr;
         if (isRegArg)
         {
             regNumber nextRegNum = REG_STK;
@@ -3372,15 +3409,19 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #endif
 #endif
 
-            // This is a register argument - put it in the table
-            newArgEntry = call->fgArgInfo->AddRegArg(argIndex, argx, args, nextRegNum, size, argAlign, isStructArg,
-                                                     callIsVararg UNIX_AMD64_ABI_ONLY_ARG(nextOtherRegNum)
-                                                         UNIX_AMD64_ABI_ONLY_ARG(structIntRegs)
-                                                             UNIX_AMD64_ABI_ONLY_ARG(structFloatRegs)
-                                                                 UNIX_AMD64_ABI_ONLY_ARG(&structDesc));
+            if (!argIsUnused)
+            {
+                // This is a register argument - put it in the table
+                newArgEntry =
+                    call->fgArgInfo->AddRegArg(newArgIndex, argx, args, nextRegNum, size, argAlign, isStructArg,
+                                               callIsVararg UNIX_AMD64_ABI_ONLY_ARG(nextOtherRegNum)
+                                                   UNIX_AMD64_ABI_ONLY_ARG(structIntRegs)
+                                                       UNIX_AMD64_ABI_ONLY_ARG(structFloatRegs)
+                                                           UNIX_AMD64_ABI_ONLY_ARG(&structDesc));
 
-            newArgEntry->SetIsBackFilled(isBackFilled);
-            newArgEntry->isNonStandard = isNonStandard;
+                newArgEntry->SetIsBackFilled(isBackFilled);
+                newArgEntry->isNonStandard = isNonStandard;
+            }
 
             // Set up the next intArgRegNum and fltArgRegNum values.
             if (!isBackFilled)
@@ -3406,7 +3447,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                                    (argx->gtOper == GT_COMMA && (argx->gtFlags & GTF_ASG)));
                             unsigned numRegsPartial = MAX_REG_ARG - intArgRegNum;
                             assert((unsigned char)numRegsPartial == numRegsPartial);
-                            call->fgArgInfo->SplitArg(argIndex, numRegsPartial, size - numRegsPartial);
+                            call->fgArgInfo->SplitArg(newArgIndex, numRegsPartial, size - numRegsPartial);
                         }
 #endif // FEATURE_ARG_SPLIT
 
@@ -3437,34 +3478,48 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         }
         else // We have an argument that is not passed in a register
         {
-            // This is a stack argument - put it in the table
-            newArgEntry = call->fgArgInfo->AddStkArg(argIndex, argx, args, size, argAlign, isStructArg, callIsVararg);
-#ifdef UNIX_AMD64_ABI
-            // TODO-Amd64-Unix-CQ: This is temporary (see also in fgMorphArgs).
-            if (structDesc.passedInRegisters)
+            if (!argIsUnused)
             {
-                newArgEntry->structDesc.CopyFrom(structDesc);
-            }
+                // This is a stack argument - put it in the table
+                newArgEntry =
+                    call->fgArgInfo->AddStkArg(newArgIndex, argx, args, size, argAlign, isStructArg, callIsVararg);
+#ifdef UNIX_AMD64_ABI
+                // TODO-Amd64-Unix-CQ: This is temporary (see also in fgMorphArgs).
+                if (structDesc.passedInRegisters)
+                {
+                    newArgEntry->structDesc.CopyFrom(structDesc);
+                }
 #endif
+            }
         }
 
-#ifdef FEATURE_HFA
-        if (isHfaArg)
+        if (argIsUnused)
         {
-            newArgEntry->SetHfaType(hfaType, hfaSlots);
-        }
-#endif // FEATURE_HFA
-        newArgEntry->SetMultiRegNums();
-
-        noway_assert(newArgEntry != nullptr);
-        if (newArgEntry->isStruct)
-        {
-            newArgEntry->passedByRef = passStructByRef;
-            newArgEntry->argType     = (structBaseType == TYP_UNKNOWN) ? argx->TypeGet() : structBaseType;
+            *argPtr = args->GetNext();
+            call->fgArgInfo->DecrementArgTableSize();
         }
         else
         {
-            newArgEntry->argType = argx->TypeGet();
+            newArgIndex++;
+            argPtr = &(args->NextRef());
+#ifdef FEATURE_HFA
+            if (isHfaArg)
+            {
+                newArgEntry->SetHfaType(hfaType, hfaSlots);
+            }
+#endif // FEATURE_HFA
+            newArgEntry->SetMultiRegNums();
+
+            noway_assert(newArgEntry != nullptr);
+            if (newArgEntry->isStruct)
+            {
+                newArgEntry->passedByRef = passStructByRef;
+                newArgEntry->argType     = (structBaseType == TYP_UNKNOWN) ? argx->TypeGet() : structBaseType;
+            }
+            else
+            {
+                newArgEntry->argType = argx->TypeGet();
+            }
         }
 
         argSlots += size;
