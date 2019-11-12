@@ -364,6 +364,10 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __recordMethodPointer(IntPtr _this, IntPtr* ppException, void* addr);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
+        delegate void __recordUnusedParameters(IntPtr _this, IntPtr* ppException, uint parameters);
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
+        delegate uint __getUnusedParameters(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* methodHandle);
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __recordRelocation(IntPtr _this, IntPtr* ppException, void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate ushort __getRelocTypeHint(IntPtr _this, IntPtr* ppException, void* target);
@@ -2791,6 +2795,33 @@ namespace Internal.JitInterface
             }
         }
 
+        static void _recordUnusedParameters(IntPtr thisHandle, IntPtr* ppException, uint parameters)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                _this.recordUnusedParameters(parameters);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+            }
+        }
+
+        static uint _getUnusedParameters(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* methodHandle)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getUnusedParameters(methodHandle);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return 0;
+            }
+        }
+
         static void _recordRelocation(IntPtr thisHandle, IntPtr* ppException, void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
         {
             var _this = GetThis(thisHandle);
@@ -2862,8 +2893,8 @@ namespace Internal.JitInterface
 
         static IntPtr GetUnmanagedCallbacks(out Object keepAlive)
         {
-            IntPtr * callbacks = (IntPtr *)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 181);
-            Object[] delegates = new Object[181];
+            IntPtr * callbacks = (IntPtr *)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 183);
+            Object[] delegates = new Object[183];
 
             var d0 = new __getMethodAttribs(_getMethodAttribs);
             callbacks[0] = Marshal.GetFunctionPointerForDelegate(d0);
@@ -3394,22 +3425,28 @@ namespace Internal.JitInterface
             var d175 = new __recordMethodPointer(_recordMethodPointer);
             callbacks[175] = Marshal.GetFunctionPointerForDelegate(d175);
             delegates[175] = d175;
-
-            var d176 = new __recordRelocation(_recordRelocation);
+            var d176 = new __recordUnusedParameters(_recordUnusedParameters);
             callbacks[176] = Marshal.GetFunctionPointerForDelegate(d176);
             delegates[176] = d176;
-            var d177 = new __getRelocTypeHint(_getRelocTypeHint);
+            var d177 = new __getUnusedParameters(_getUnusedParameters);
             callbacks[177] = Marshal.GetFunctionPointerForDelegate(d177);
             delegates[177] = d177;
-            var d178 = new __getModuleNativeEntryPointRange(_getModuleNativeEntryPointRange);
+
+            var d178 = new __recordRelocation(_recordRelocation);
             callbacks[178] = Marshal.GetFunctionPointerForDelegate(d178);
             delegates[178] = d178;
-            var d179 = new __getExpectedTargetArchitecture(_getExpectedTargetArchitecture);
+            var d179 = new __getRelocTypeHint(_getRelocTypeHint);
             callbacks[179] = Marshal.GetFunctionPointerForDelegate(d179);
             delegates[179] = d179;
-            var d180 = new __getJitFlags(_getJitFlags);
+            var d180 = new __getModuleNativeEntryPointRange(_getModuleNativeEntryPointRange);
             callbacks[180] = Marshal.GetFunctionPointerForDelegate(d180);
             delegates[180] = d180;
+            var d181 = new __getExpectedTargetArchitecture(_getExpectedTargetArchitecture);
+            callbacks[181] = Marshal.GetFunctionPointerForDelegate(d181);
+            delegates[181] = d181;
+            var d182 = new __getJitFlags(_getJitFlags);
+            callbacks[182] = Marshal.GetFunctionPointerForDelegate(d182);
+            delegates[182] = d182;
 
             keepAlive = delegates;
             return (IntPtr)callbacks;

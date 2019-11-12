@@ -201,6 +201,8 @@ namespace ILCompiler
 
         private bool _resilient;
 
+        private bool _scanningDone;
+
         public CallGraph CallGraph { get; }
 
         public bool ScanILOnly { get; private set; }
@@ -273,11 +275,18 @@ namespace ILCompiler
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
+            ConditionalWeakTable<Thread, CorInfoImpl> cwt = new ConditionalWeakTable<Thread, CorInfoImpl>();
+
+            if (_scanningDone)
+            {
+                CompileMethods(obj, methodObj => methodObj as MethodWithGCInfo, cwt);
+                return;
+            }
+
             ScanILOnly = true;
 
             MethodsToScan = new Queue<MethodWithGCInfo>();
 
-            ConditionalWeakTable<Thread, CorInfoImpl> cwt = new ConditionalWeakTable<Thread, CorInfoImpl>();
             // Add all nodes to the call graph as roots
             foreach (DependencyNodeCore<NodeFactory> dependency in obj)
             {
@@ -295,11 +304,7 @@ namespace ILCompiler
                 CallGraph.AddRootNode(methodCodeNodeNeedingCode);
             }
 
-            if (MethodsToScan.Count == 0)
-            {
-                return;
-            }
-
+            Console.WriteLine("Starting scanning");
             while (MethodsToScan.Count > 0)
             {
                 MethodWithGCInfo method = MethodsToScan.Dequeue();
@@ -321,15 +326,22 @@ namespace ILCompiler
                 method.Scanned = true;
             }
 
-            ScanILOnly = false;
+            _scanningDone = true;
+            Console.WriteLine("Finished scanning");
 
+            ScanILOnly = false;
+            IEnumerable<CallGraphNode> postOrder = CallGraph.GetPostOrder();
+            // Perform bottom-up compilation.
+            CompileMethods(postOrder, methodObj => (methodObj as CallGraphNode).Method, cwt);
+        }
+
+        private void CompileMethods(IEnumerable<object> methods, Func<object, MethodWithGCInfo> getMethodWithGCInfo, ConditionalWeakTable<Thread, CorInfoImpl> cwt)
+        {
             using (PerfEventSource.StartStopEvents.JitEvents())
             {
-                // Perform bottom-up compilation.
-                ICollection<CallGraphNode> postOrder = CallGraph.GetPostOrder();
-                foreach (var callGraphNode in postOrder)
+                foreach (var obj in methods)
                 {
-                    MethodWithGCInfo methodCodeNodeNeedingCode = callGraphNode.Method;
+                    MethodWithGCInfo methodCodeNodeNeedingCode = getMethodWithGCInfo(obj);
                     MethodDesc method = methodCodeNodeNeedingCode.Method;
 
                     if (Logger.IsVerbose)
@@ -360,6 +372,7 @@ namespace ILCompiler
                         Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
                     }
                 }
+                Console.WriteLine("Finished compilation");
             }
         }
 

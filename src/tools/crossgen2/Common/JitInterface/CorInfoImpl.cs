@@ -2906,6 +2906,17 @@ namespace Internal.JitInterface
                 this._compilation.MethodsToScan.Enqueue(methodNode);
             }
         }
+        private void recordUnusedParameters(uint parameters)
+        {
+            MethodDesc currentMethod = _methodCodeNode.Method;
+            currentMethod.UnusedParameters = parameters;
+        }
+
+        private uint getUnusedParameters(CORINFO_METHOD_STRUCT_* methodHandle)
+        {
+            MethodDesc method = (MethodDesc)HandleToObject((IntPtr)methodHandle);
+            return method.UnusedParameters;
+        }
 
         private ArrayBuilder<Relocation> _relocs;
 

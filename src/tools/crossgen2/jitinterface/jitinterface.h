@@ -186,6 +186,8 @@ struct JitInterfaceCallbacks
     void (* recordCallSite)(void * thisHandle, CorInfoException** ppException, unsigned int instrOffset, void* callSig, void* methodHandle);
     void(* recordCallee)(void * thisHandle, CorInfoException** ppException, void* methodHandle, void* addr, bool isVirtual);
     void(*recordMethodPointer)(void * thisHandle, CorInfoException** ppException, void* addr);
+    void(*recordUnusedParameters)(void * thisHandle, CorInfoException** ppException, unsigned int parameters);
+    unsigned int (*getUnusedParameters)(void * thisHandle, CorInfoException** ppException, void* methodHandle);
     void (* recordRelocation)(void * thisHandle, CorInfoException** ppException, void* location, void* target, unsigned short fRelocType, unsigned short slotNum, int addlDelta);
     unsigned short (* getRelocTypeHint)(void * thisHandle, CorInfoException** ppException, void* target);
     void (* getModuleNativeEntryPointRange)(void * thisHandle, CorInfoException** ppException, void** pStart, void** pEnd);
@@ -1702,6 +1704,23 @@ public:
         _callbacks->recordMethodPointer(_thisHandle, &pException, addr);
         if (pException != nullptr)
             throw pException;
+    }
+
+    virtual void recordUnusedParameters(unsigned int parameters)
+    {
+        CorInfoException* pException = nullptr;
+        _callbacks->recordUnusedParameters(_thisHandle, &pException, parameters);
+        if (pException != nullptr)
+            throw pException;
+    }
+
+    virtual unsigned int getUnusedParameters(void* methodHandle)
+    {
+        CorInfoException* pException = nullptr;
+        unsigned int ret = _callbacks->getUnusedParameters(_thisHandle, &pException, methodHandle);
+        if (pException != nullptr)
+            throw pException;
+        return ret;
     }
 
     virtual void recordRelocation(void* location, void* target, unsigned short fRelocType, unsigned short slotNum, int addlDelta)

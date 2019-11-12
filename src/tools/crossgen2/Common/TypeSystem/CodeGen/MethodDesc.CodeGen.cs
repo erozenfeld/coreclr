@@ -153,6 +153,8 @@ namespace Internal.TypeSystem
                 return false;
             }
         }
+
+        public uint UnusedParameters { get; set; }
     }
 
     // Additional members of InstantiatedMethod related to code generation.

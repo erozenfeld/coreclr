@@ -77,12 +77,7 @@ namespace ILCompiler
             _methodToCallGraphNode[caller].AddCallee(calleeNode);
         }
 
-        public ICollection<CallGraphNode> GetNodes()
-        {
-            return _nodes;
-        }
-
-        public ICollection<CallGraphNode> GetPostOrder()
+        public IEnumerable<CallGraphNode> GetPostOrder()
         {
             if (_computedOrder)
             {
